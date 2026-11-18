@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lumikey</title>
+<style>
+:root {
+  --bg: #0b0d10;
+  --bg2: #111419;
+  --panel: #161a21;
+  --panel2: #1c212a;
+  --line: #262c37;
+  --text: #e8ecf2;
+  --muted: #8a93a3;
+  --accent: #39e6b4;
+  --accent2: #3aa0ff;
+  --danger: #ff5d6c;
+  --radius: 14px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+  font: 14px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; user-select: none; }
+button { font: inherit; color: inherit; }
+.app { display: grid; grid-template-columns: 232px 1fr; height: 100vh; }
+
+/* ---------- sidebar ---------- */
+.side { background: linear-gradient(180deg, #0f1216, #0b0d10); border-right: 1px solid var(--line);
+  display: flex; flex-direction: column; padding: 22px 16px; gap: 6px; }
+.brand { display: flex; align-items: center; gap: 10px; margin: 0 6px 22px; }
+.logo { width: 34px; height: 34px; border-radius: 10px;
+  background: conic-gradient(from 200deg, var(--accent), var(--accent2), #b46bff, var(--accent));
+  box-shadow: 0 0 22px rgba(57,230,180,.35); position: relative; }
+.logo::after { content: ""; position: absolute; inset: 7px; border-radius: 5px; background: var(--bg); }
+.brand b { font-size: 17px; letter-spacing: .3px; }
+.brand small { display: block; color: var(--muted); font-size: 11.5px; margin-top: -2px; }
+.nav { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px; cursor: pointer;
+  color: var(--muted); border: 1px solid transparent; background: none; text-align: left; width: 100%; }
+.nav:hover { color: var(--text); background: var(--panel); }
+.nav.active { color: var(--text); background: var(--panel2); border-color: var(--line); }
+.nav svg { width: 18px; height: 18px; flex: none; }
+.nav.active svg { color: var(--accent); }
+.spacer { flex: 1; }
+.lang { align-self: flex-start; margin: 0 2px 10px; }
+.lang button { padding: 6px 12px; font-size: 12.5px; }
+.device { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.device .name { font-weight: 600; }
+.device .st { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+.dot.on { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+/* ---------- main ---------- */
+.main { overflow: auto; padding: 26px 32px 32px; }
+.head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 18px; gap: 16px; }
+.head h1 { margin: 0; font-size: 24px; font-weight: 650; letter-spacing: .2px; }
+.head p { margin: 4px 0 0; color: var(--muted); }
+.page { display: none; }
+.page.active { display: block; }
+
+.stage { position: relative; background: radial-gradient(1200px 300px at 50% 0%, #18202a 0%, var(--bg2) 60%);
+  border: 1px solid var(--line); border-radius: 20px; padding: 28px; margin-bottom: 18px; }
+.kb { position: relative; margin: 0 auto; border-radius: 16px; padding: 18px;
+  background: linear-gradient(180deg, #f3f4f6, #d9dde3); box-shadow: 0 20px 50px rgba(0,0,0,.55), inset 0 1px 0 #fff; }
+.kb.dark { background: linear-gradient(180deg, #23272e, #181b20); box-shadow: 0 20px 50px rgba(0,0,0,.55), inset 0 1px 0 #333a44; }
+.keys { position: relative; }
+.key { position: absolute; border-radius: 6px; display: flex; align-items: center; justify-content: center; text-align: center;
+  font-size: 10.5px; line-height: 1.05; color: #2b3038; white-space: pre-line; cursor: default;
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(236,239,243,.88));
+  box-shadow: 0 2px 0 rgba(0,0,0,.18), inset 0 -2px 0 rgba(0,0,0,.06);
+  transition: transform .06s; }
+.key .glow { position: absolute; inset: -3px; border-radius: 8px; z-index: -1; filter: blur(5px); opacity: .95; }
+.key .cap { position: absolute; inset: 0; border-radius: 6px; mix-blend-mode: multiply; opacity: .55; }
+.key span { position: relative; z-index: 1; pointer-events: none; }
+.paint .key { cursor: crosshair; }
+.paint .key:hover { transform: translateY(-1px); outline: 2px solid rgba(255,255,255,.75); outline-offset: 1px; }
+.key.sel { outline: 2px solid var(--accent2) !important; }
+
+.grid { display: grid; grid-template-columns: 1.45fr 1fr; gap: 18px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
+.card h3 { margin: 0 0 14px; font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); font-weight: 600; }
+.modes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.mode { position: relative; padding: 12px 12px 12px 46px; border-radius: 11px; border: 1px solid var(--line); background: var(--panel2);
+  cursor: pointer; min-height: 52px; display: flex; align-items: center; transition: border-color .15s, background .15s; text-align: left; }
+.mode:hover { border-color: #3a4352; }
+.mode.active { border-color: var(--accent); background: linear-gradient(180deg, rgba(57,230,180,.12), rgba(57,230,180,.03)); }
+.mode i { position: absolute; left: 12px; top: 50%; width: 24px; height: 24px; margin-top: -12px; border-radius: 7px; }
+.row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.row label { width: 92px; color: var(--muted); flex: none; }
+.row output { width: 26px; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+input[type=range] { -webkit-appearance: none; appearance: none; flex: 1; height: 6px; border-radius: 6px; outline: none;
+  background: linear-gradient(90deg, var(--accent) var(--p, 50%), #2a313d var(--p, 50%)); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff;
+  box-shadow: 0 0 0 4px rgba(57,230,180,.25); cursor: pointer; }
+input[type=range]:disabled { opacity: .35; }
+.swatches { display: flex; flex-wrap: wrap; gap: 9px; }
+.sw { width: 34px; height: 34px; border-radius: 10px; border: 2px solid transparent; cursor: pointer; position: relative;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); padding: 0; }
+.sw.active { border-color: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.15); }
+.sw.custom { overflow: hidden; }
+.sw.custom input { position: absolute; inset: -8px; width: 60px; height: 60px; border: 0; padding: 0; opacity: 0; cursor: pointer; }
+.rainbow { background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); }
+.disabled { opacity: .35; pointer-events: none; }
+.btn { border: 1px solid var(--line); background: var(--panel2); border-radius: 10px; padding: 10px 16px; cursor: pointer; }
+.btn:hover { border-color: #3a4352; }
+.btn.primary { border: 0; color: #04140f; font-weight: 650; background: linear-gradient(135deg, var(--accent), #2fd0f0);
+  box-shadow: 0 6px 22px rgba(57,230,180,.25); }
+.btn.primary:hover { filter: brightness(1.07); }
+.btn:disabled { opacity: .45; cursor: default; filter: none; }
+.actions { display: flex; gap: 10px; justify-content: flex-end; align-items: center; margin-top: 6px; }
+.dirty { color: #ffcf5a; font-size: 12.5px; margin-right: auto; visibility: hidden; }
+.dirty.show { visibility: visible; }
+.hint { color: var(--muted); font-size: 12.5px; }
+
+/* per-key toolbar */
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 18px; }
+.seg { display: inline-flex; background: var(--panel); border: 1px solid var(--line); border-radius: 11px; padding: 3px; }
+.seg button { border: 0; background: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; color: var(--muted); }
+.seg button.active { background: var(--panel2); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
+.brush { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 11px; padding: 6px 10px 6px 6px; }
+.brush .big { width: 34px; height: 34px; border-radius: 9px; position: relative; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
+.brush .big input { position: absolute; inset: -8px; width: 60px; height: 60px; opacity: 0; cursor: pointer; }
+.brush code { font: 12.5px Consolas, monospace; color: var(--muted); }
+.recent { display: flex; gap: 6px; }
+.recent button { width: 22px; height: 22px; border-radius: 6px; border: 0; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255,255,255,.15); }
+.toolbar .grow { flex: 1; }
+
+.toast { position: fixed; right: 22px; bottom: 22px; background: var(--panel2); border: 1px solid var(--line); border-left: 3px solid var(--accent);
+  padding: 12px 16px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.4); transform: translateY(20px); opacity: 0; transition: .2s; max-width: 380px; }
+.toast.show { transform: none; opacity: 1; }
+.toast.err { border-left-color: var(--danger); }
+.overlay { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 6px;
+  background: rgba(11,13,16,.72); border-radius: 20px; backdrop-filter: blur(3px); text-align: center; }
+.overlay.show { display: flex; }
+.overlay b { font-size: 16px; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); cursor: pointer; font-size: 12.5px; }
+.toggle input { accent-color: var(--accent); }
+@media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo"></div><div><b>Lumikey</b><small data-i18n="brandSub"></small></div></div>
+    <button class="nav active" data-page="light">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
+      <span data-i18n="navEffects"></span></button>
+    <button class="nav" data-page="keys">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="13" rx="2.5"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 15h10"/></svg>
+      <span data-i18n="navKeys"></span></button>
+    <div class="spacer"></div>
+    <div class="lang seg" id="lang"><button data-l="en">EN</button><button data-l="ru">RU</button></div>
+    <div class="device">
+      <div class="name" id="devName">FL980 V2</div>
+      <div class="st"><span class="dot" id="devDot"></span><span id="devSt"></span></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- ================= EFFECTS ================= -->
+    <section class="page active" id="page-light">
+      <div class="head">
+        <div><h1 data-i18n="effTitle"></h1><p data-i18n="effSub"></p></div>
+        <label class="toggle"><input type="checkbox" id="darkCase"> <span data-i18n="darkCase"></span></label>
+      </div>
+      <div class="stage">
+        <div class="kb" id="kbLight"><div class="keys"></div></div>
+        <div class="overlay" id="ovLight"><b data-i18n="notConnected"></b><span class="hint" data-i18n="connectHint"></span></div>
+      </div>
+      <div class="grid">
+        <div class="card"><h3 data-i18n="mode"></h3><div class="modes" id="modes"></div></div>
+        <div class="card">
+          <h3 data-i18n="params"></h3>
+          <div class="row" id="rowBright"><label data-i18n="brightness"></label><input type="range" id="bright" min="0" max="4" step="1"><output id="brightV"></output></div>
+          <div class="row" id="rowSpeed"><label data-i18n="speed"></label><input type="range" id="speed" min="0" max="5" step="1"><output id="speedV"></output></div>
+          <div class="row" id="rowColor" style="align-items:flex-start"><label style="padding-top:7px" data-i18n="color"></label><div class="swatches" id="swatches"></div></div>
+          <div class="row" id="rowSlot" style="display:none"><label data-i18n="picture"></label>
+            <div class="seg" id="slotSegL"><button data-s="1" class="active"></button><button data-s="2"></button><button data-s="3"></button></div></div>
+          <div class="actions">
+            <span class="dirty" id="dirty" data-i18n="unapplied"></span>
+            <button class="btn" id="btnReload" data-i18n="reset"></button>
+            <button class="btn primary" id="btnApply" data-i18n="apply"></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PER-KEY ================= -->
+    <section class="page" id="page-keys">
+      <div class="head">
+        <div><h1 data-i18n="keysTitle"></h1><p data-i18n="keysSub"></p></div>
+      </div>
+      <div class="toolbar">
+        <div class="brush">
+          <div class="big" id="brushBig"><input type="color" id="brushPick" value="#ff2a2a"></div>
+          <div><div style="font-weight:600" data-i18n="brush"></div><code id="brushHex">#FF2A2A</code></div>
+        </div>
+        <div class="recent" id="recent"></div>
+        <div class="seg" id="tools"><button data-t="paint" class="active" data-i18n="toolBrush"></button><button data-t="erase" data-i18n="toolErase"></button><button data-t="pick" data-i18n="toolPick"></button></div>
+        <div class="grow"></div>
+        <div class="seg" id="slotSeg"><button data-s="1" class="active"></button><button data-s="2"></button><button data-s="3"></button></div>
+      </div>
+      <div class="stage">
+        <div class="kb paint" id="kbKeys"><div class="keys"></div></div>
+        <div class="overlay" id="ovKeys"><b data-i18n="notConnected"></b><span class="hint" data-i18n="drawOfflineHint"></span></div>
+      </div>
+      <div class="card">
+        <div class="toolbar" style="margin:0">
+          <button class="btn" id="fillAll" data-i18n="fillAll"></button>
+          <button class="btn" id="clearAll" data-i18n="clearAll"></button>
+          <button class="btn" id="gradRainbow" data-i18n="rainbow"></button>
+          <button class="btn" id="gradTwo" data-i18n="gradient"></button>
+          <button class="btn" id="presetWasd" data-i18n="wasd"></button>
+          <div class="grow"></div>
+          <span class="dirty" id="dirtyKeys" data-i18n="notUploaded"></span>
+          <button class="btn primary" id="btnUpload" data-i18n="upload"></button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------------- data ----------------
+// Key geometry of FL980 V2 from the official web driver: [label, hidValue, x, y, w, h]   (y grows upward there)
+const LAYOUT = [["Esc",41,0,0,26,29],["F1",58,76,0,26,29],["F2",59,114,0,26,29],["F3",60,152,0,26,29],["F4",61,190,0,26,29],["F5",62,247,0,26,29],["F6",63,285,0,26,29],["F7",64,323,0,26,29],["F8",65,361,0,26,29],["F9",66,418,0,26,29],["F10",67,456,0,26,29],["F11",68,494,0,26,29],["F12",69,532,0,26,29],["Del",76,587,0,26,29],["Ins",73,625,0,26,29],["PgUp",75,663,0,26,29],["PgDn",78,701,0,26,29],["`",53,0,-52,26,29],["1",30,38,-52,26,29],["2",31,76,-52,26,29],["3",32,114,-52,26,29],["4",33,152,-52,26,29],["5",34,190,-52,26,29],["6",35,228,-52,26,29],["7",36,266,-52,26,29],["8",37,304,-52,26,29],["9",38,342,-52,26,29],["0",39,380,-52,26,29],["-",45,418,-52,26,29],["=",46,456,-52,26,29],["Backspace",42,494,-52,64,29],["Num",83,587,-52,26,29],["/",84,625,-52,26,29],["*",85,663,-52,26,29],["-",86,701,-52,26,29],["Tab",43,0,-89,45,29],["Q",20,57,-89,26,29],["W",26,95,-89,26,29],["E",8,133,-89,26,29],["R",21,171,-89,26,29],["T",23,209,-89,26,29],["Y",28,247,-89,26,29],["U",24,285,-89,26,29],["I",12,323,-89,26,29],["O",18,361,-89,26,29],["P",19,399,-89,26,29],["[",47,437,-89,26,29],["]",48,475,-89,26,29],["\\",49,513,-89,45,29],["7",95,587,-89,26,29],["8",96,625,-89,26,29],["9",97,663,-89,26,29],["+",87,701,-89,26,66],["Caps",57,0,-126,55,29],["A",4,67,-126,26,29],["S",22,105,-126,26,29],["D",7,143,-126,26,29],["F",9,181,-126,26,29],["G",10,219,-126,26,29],["H",11,257,-126,26,29],["J",13,295,-126,26,29],["K",14,333,-126,26,29],["L",15,371,-126,26,29],[";",51,409,-126,26,29],["'",52,447,-126,26,29],["Enter",40,485,-126,73,29],["4",92,587,-126,26,29],["5",93,625,-126,26,29],["6",94,663,-126,26,29],["Shift",225,0,-164,74,29],["Z",29,85,-164,26,29],["X",27,123,-164,26,29],["C",6,161,-164,26,29],["V",25,199,-164,26,29],["B",5,237,-164,26,29],["N",17,275,-164,26,29],["M",16,313,-164,26,29],[",",54,351,-164,26,29],[".",55,389,-164,26,29],["/",56,427,-164,26,29],["Shift",229,465,-164,55,29],["↑",82,531,-164,26,29],["1",89,587,-164,26,29],["2",90,625,-164,26,29],["3",91,663,-164,26,29],["Enter",88,701,-164,26,66],["Ctrl",224,0,-201,36,29],["Win",227,47,-201,36,29],["Alt",226,95,-201,36,29],["",44,143,-201,225,29],["Alt",230,380,-201,36,29],["Fn",167837696,428,-201,36,29],["←",80,494,-201,26,29],["↓",81,532,-201,26,29],["→",79,570,-201,26,29],["0",98,625,-201,26,29],[".",99,663,-201,26,29]];
+const KB_W = 727, KB_H = 230;
+
+// ---------------- i18n (English is the default, Russian is optional) ----------------
+const I18N = {
+  en: {
+    brandSub: "FL980 V2 lighting", navEffects: "Effects", navKeys: "Per-key",
+    searching: "Searching…", connected: "Connected (USB cable)", disconnected: "Not connected", noServer: "App is not responding",
+    effTitle: "Lighting effects", effSub: "Pick an effect — the preview shows how it will look — then press Apply.",
+    darkCase: "dark case", notConnected: "Keyboard not connected",
+    connectHint: "Plug the FL980 V2 in with the USB cable (2.4G and Bluetooth are not supported)",
+    mode: "Mode", params: "Settings", brightness: "Brightness", speed: "Speed", color: "Colour", picture: "Picture",
+    slot: "Slot", unapplied: "● unapplied changes", reset: "Revert", apply: "Apply",
+    keysTitle: "Per-key lighting", keysSub: "Paint with the mouse: left click — brush, right click — erase, Alt+click — pick colour. Drag to paint many keys.",
+    brush: "Brush", toolBrush: "Brush", toolErase: "Eraser", toolPick: "Picker",
+    drawOfflineHint: "You can still paint, but uploading needs the USB cable",
+    fillAll: "Fill all", clearAll: "Clear", rainbow: "Rainbow", gradient: "Gradient brush → white", wasd: "WASD + arrows",
+    notUploaded: "● not uploaded", upload: "Upload to keyboard", uploading: "Uploading…",
+    applied: "Applied ✓", readBack: "Settings read from the keyboard", uploaded: "Picture uploaded to slot {0} ✓",
+    errNoKb: "Keyboard is not connected by cable", errPrefix: "Error: ",
+    confirmSlot: "The picture in this slot is not uploaded to the keyboard. Switch slot anyway?",
+    customColor: "Custom colour", launchHint: "Start Lumikey.exe to open this page.",
+    m0: "Off", m1: "Static", m2: "Breathing", m3: "Neon", m4: "Rainbow wave", m5: "Ripple", m6: "Raindrops",
+    m8: "Reactive key", m9: "Converge", m10: "Row beam", m14: "Per-key rainbow", m12: "Custom picture",
+    c0: "Red", c1: "Green", c2: "Blue", c3: "Pink", c4: "Yellow", c5: "White", c6: "Rainbow",
+  },
+  ru: {
+    brandSub: "подсветка FL980 V2", navEffects: "Эффекты", navKeys: "Клавиши",
+    searching: "Поиск…", connected: "Подключена по кабелю", disconnected: "Не подключена", noServer: "Приложение не отвечает",
+    effTitle: "Эффекты подсветки", effSub: "Выбери эффект — превью покажет, как он будет выглядеть, затем «Применить».",
+    darkCase: "тёмный корпус", notConnected: "Клавиатура не подключена",
+    connectHint: "Подключи FL980 V2 кабелем (2.4G и Bluetooth не поддерживаются)",
+    mode: "Режим", params: "Параметры", brightness: "Яркость", speed: "Скорость", color: "Цвет", picture: "Рисунок",
+    slot: "Слот", unapplied: "● есть неприменённые изменения", reset: "Сбросить", apply: "Применить",
+    keysTitle: "Подсветка по клавишам", keysSub: "Рисуй мышкой: ЛКМ — кисть, ПКМ — стереть, Alt+клик — пипетка. Тяни, чтобы красить несколько.",
+    brush: "Кисть", toolBrush: "Кисть", toolErase: "Ластик", toolPick: "Пипетка",
+    drawOfflineHint: "Рисовать можно, но загрузить получится только по кабелю",
+    fillAll: "Залить всё", clearAll: "Очистить", rainbow: "Радуга", gradient: "Градиент кисть → белый", wasd: "WASD + стрелки",
+    notUploaded: "● не загружено", upload: "Загрузить в клавиатуру", uploading: "Загрузка…",
+    applied: "Применено ✓", readBack: "Настройки прочитаны с клавиатуры", uploaded: "Рисунок загружен в слот {0} ✓",
+    errNoKb: "Клавиатура не подключена по кабелю", errPrefix: "Ошибка: ",
+    confirmSlot: "Рисунок в этом слоте не загружен в клавиатуру. Переключить слот всё равно?",
+    customColor: "Свой цвет", launchHint: "Запусти Lumikey.exe, чтобы открыть эту страницу.",
+    m0: "Выключено", m1: "Статичный", m2: "Дыхание", m3: "Неон", m4: "Радужная волна", m5: "Рябь от клавиши", m6: "Капли",
+    m8: "Нажатая клавиша", m9: "Схождение", m10: "Луч по ряду", m14: "Радуга по клавишам", m12: "Свой рисунок",
+    c0: "Красный", c1: "Зелёный", c2: "Синий", c3: "Розовый", c4: "Жёлтый", c5: "Белый", c6: "Радуга",
+  },
+};
+let LANG = "en";
+try { const s = localStorage.getItem("lumikey.lang"); if (s && I18N[s]) LANG = s; } catch {}
+const t = (k, ...a) => (I18N[LANG][k] ?? I18N.en[k] ?? k).replace(/\{(\d)\}/g, (_, i) => a[i]);
+function applyI18n() {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll("[data-s]").forEach(b => b.textContent = t("slot") + " " + b.dataset.s);
+  document.querySelectorAll("#lang button").forEach(b => b.classList.toggle("active", b.dataset.l === LANG));
+}
+function setLang(l) {
+  LANG = l; try { localStorage.setItem("lumikey.lang", l); } catch {}
+  applyI18n(); syncControls(); updateStatusText();
+}
+
+const MODES = [
+  { id: 0,  speed: 0, color: 0, bright: 0 },
+  { id: 1,  speed: 0, color: 1, bright: 1 },
+  { id: 2,  speed: 1, color: 1, bright: 1 },
+  { id: 3,  speed: 1, color: 0, bright: 1 },
+  { id: 4,  speed: 1, color: 0, bright: 1 },
+  { id: 5,  speed: 1, color: 1, bright: 1 },
+  { id: 6,  speed: 1, color: 1, bright: 1 },
+  { id: 8,  speed: 1, color: 1, bright: 1 },
+  { id: 9,  speed: 1, color: 1, bright: 1 },
+  { id: 10, speed: 1, color: 1, bright: 1 },
+  { id: 14, speed: 1, color: 0, bright: 1 },
+  { id: 12, speed: 0, color: 0, bright: 0 },
+];
+const PALETTE = [
+  { c: [255, 30, 30] }, { c: [30, 230, 70] }, { c: [40, 80, 255] },
+  { c: [255, 60, 200] }, { c: [255, 220, 30] }, { c: [255, 255, 255] },
+  { c: null },
+];
+// KeyboardEvent.code -> HID usage (for the live preview of reactive modes)
+const CODE2HID = (() => {
+  const m = {}; for (let i = 0; i < 26; i++) m["Key" + String.fromCharCode(65 + i)] = 4 + i;
+  for (let i = 1; i <= 9; i++) m["Digit" + i] = 29 + i; m.Digit0 = 39;
+  for (let i = 1; i <= 12; i++) m["F" + i] = 57 + i;
+  Object.assign(m, { Enter: 40, Escape: 41, Backspace: 42, Tab: 43, Space: 44, Minus: 45, Equal: 46, BracketLeft: 47, BracketRight: 48,
+    Backslash: 49, Semicolon: 51, Quote: 52, Backquote: 53, Comma: 54, Period: 55, Slash: 56, CapsLock: 57, Insert: 73, PageUp: 75,
+    Delete: 76, PageDown: 78, ArrowRight: 79, ArrowLeft: 80, ArrowDown: 81, ArrowUp: 82, NumLock: 83, NumpadDivide: 84, NumpadMultiply: 85,
+    NumpadSubtract: 86, NumpadAdd: 87, NumpadEnter: 88, Numpad0: 98, NumpadDecimal: 99, ControlLeft: 224, ShiftLeft: 225, AltLeft: 226,
+    MetaLeft: 227, ShiftRight: 229, AltRight: 230 });
+  for (let i = 1; i <= 9; i++) m["Numpad" + i] = 88 + i;
+  return m;
+})();
+
+// ---------------- api ----------------
+const TOKEN = new URLSearchParams(location.search).get("t");
+async function api(method, path, body) {
+  const r = await fetch(path, { method, headers: { "X-Token": TOKEN, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(j.error || r.statusText); e.code = r.status; throw e; }
+  return j;
+}
+function toast(msg, err) {
+  const t = document.getElementById("toast"); t.textContent = msg; t.className = "toast show" + (err ? " err" : "");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.className = "toast" + (err ? " err" : ""), 2600);
+}
+const errText = e => e.code === 409 ? t("errNoKb") : t("errPrefix") + e.message;
+
+// ---------------- state ----------------
+let MATRIX = [];               // LED index -> hid value
+let connected = false;
+const led = { mode: 1, speed: 3, bright: 4, color: 0, r: 255, g: 0, b: 0, slot: 1 };
+let ledSaved = JSON.stringify(led);
+const pics = { 1: null, 2: null, 3: null };
+let curSlot = 1, picDirty = false;
+
+// ---------------- keyboard rendering ----------------
+function buildKb(rootId) {
+  const root = document.getElementById(rootId), keys = root.querySelector(".keys");
+  const avail = Math.min(1180, document.querySelector(".main").clientWidth - 64 - 56 - 36);
+  const S = Math.max(0.55, avail / KB_W);
+  keys.style.width = KB_W * S + "px"; keys.style.height = KB_H * S + "px"; keys.innerHTML = "";
+  const els = [];
+  LAYOUT.forEach(([label, hid, x, y, w, h], n) => {
+    const d = document.createElement("div"); d.className = "key";
+    d.style.left = x * S + "px"; d.style.top = (-y) * S + "px"; d.style.width = w * S + "px"; d.style.height = h * S + "px";
+    d.style.fontSize = Math.max(9, 7.2 * S) + "px";
+    d.innerHTML = `<div class="glow"></div><div class="cap"></div><span>${label.replace(/</g, "&lt;")}</span>`;
+    d.dataset.n = n; d.dataset.hid = hid;
+    keys.appendChild(d);
+    els.push({ el: d, glow: d.firstChild, cap: d.children[1], hid, cx: x + w / 2, cy: -y + h / 2, n });
+  });
+  return els;
+}
+let KL = [], KK = [];
+function setKeyColor(k, rgb, a = 1) {
+  const [r, g, b] = rgb;
+  const lum = Math.max(r, g, b) * a;
+  k.glow.style.background = `rgba(${r},${g},${b},${0.85 * a})`;
+  k.glow.style.opacity = lum < 8 ? 0 : 1;
+  k.cap.style.background = lum < 8 ? "transparent" : `rgb(${r},${g},${b})`;
+  k.cap.style.opacity = (0.55 * a).toFixed(3);
+}
+function relayout() {
+  KL = buildKb("kbLight"); KK = buildKb("kbKeys"); hookPaint(); paintKeysView();
+}
+
+// ---------------- preview animation ----------------
+const hsv = (h, s = 1, v = 1) => { h = ((h % 360) + 360) % 360 / 60; const i = Math.floor(h), f = h - i, p = v * (1 - s), q = v * (1 - s * f), t = v * (1 - s * (1 - f));
+  return [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][i % 6].map(x => Math.round(x * 255)); };
+const baseColor = (k) => led.color === 6 ? hsv(k.cx / KB_W * 360) : led.color === 7 ? [led.r, led.g, led.b] : PALETTE[led.color].c;
+const hits = [];   // {cx, cy, t, hid}
+function press(hid) { const k = KL.find(k => k.hid === hid); if (k) hits.push({ cx: k.cx, cy: k.cy, t: performance.now(), hid, row: Math.round(k.cy / 37) }); if (hits.length > 30) hits.shift(); }
+addEventListener("keydown", e => { const h = CODE2HID[e.code]; if (h) press(h); });
+let lastAuto = 0;
+function frame(now) {
+  if (document.getElementById("page-light").classList.contains("active") && KL.length) {
+    const sp = 0.35 + led.speed * 0.33, br = led.mode === 12 ? 1 : (led.bright / 4) * 0.85 + (led.bright ? 0.15 : 0);
+    const t = now / 1000 * sp;
+    if ([5, 8, 10].includes(led.mode) && now - lastAuto > 900 / sp) { lastAuto = now; press(KL[Math.floor(Math.random() * KL.length)].hid); }
+    const pic = pics[led.slot];
+    for (const k of KL) {
+      let c = [0, 0, 0], a = br;
+      switch (led.mode) {
+        case 0: a = 0; break;
+        case 1: c = baseColor(k); break;
+        case 2: {   // breath; with "rainbow" the whole board takes a new colour on every breath (as the keyboard does)
+          const ph = t * 2.2 - Math.PI / 2, cycle = Math.floor((ph + Math.PI / 2) / (2 * Math.PI));
+          c = led.color === 6 ? hsv(cycle * 67) : baseColor(k);
+          a = br * (0.08 + 0.92 * (0.5 + 0.5 * Math.sin(ph))); break; }
+        case 3: c = hsv(t * 60); break;
+        case 4: c = hsv(k.cx / KB_W * 360 + t * 140); break;
+        case 14: c = hsv(k.n * 37 + t * 120); break;
+        case 9: { const d1 = Math.hypot(k.cx, k.cy), d2 = Math.hypot(KB_W - k.cx, KB_H - k.cy), ph = (t * 300) % 520;
+                  const v = Math.max(0, 1 - Math.abs(d1 - ph) / 60) + Math.max(0, 1 - Math.abs(d2 - ph) / 60); c = baseColor(k); a = br * Math.min(1, v); break; }
+        case 6: {   // raindrops: each key pulses on its own random rhythm — smooth lava-like glow, many keys at once
+          const ph = (Math.sin(k.n * 12.9898) * 43758.5453) % 1;                   // stable pseudo-random per key
+          const rate = 1.1 + Math.abs((Math.sin(k.n * 78.233) * 12345.678) % 1) * 1.2;
+          const s = Math.sin(t * rate * 2.4 + ph * 6.283);
+          c = baseColor(k); a = br * Math.pow(Math.max(0, s), 2.2); break; }
+        case 12: c = pic ? (() => { const i = MATRIX.indexOf(k.hid); return i >= 0 ? [pic[3*i], pic[3*i+1], pic[3*i+2]] : [0,0,0]; })() : [0, 0, 0]; break;
+        default: {   // reactive modes
+          let v = 0;
+          for (const h of hits) {
+            const age = (now - h.t) / 1000 * sp;
+            if (led.mode === 8 || led.mode === 6) v = Math.max(v, k.hid === h.hid ? Math.max(0, 1 - age / 1.2) : 0);
+            // ripple / row beam: the front keeps full strength and simply runs off the keyboard edges
+            else if (led.mode === 5) { const d = Math.hypot(k.cx - h.cx, k.cy - h.cy), r = age * 260; v = Math.max(v, Math.max(0, 1 - Math.abs(d - r) / 34)); }
+            else if (led.mode === 10) { if (Math.round(k.cy / 37) === h.row) { const d = Math.abs(k.cx - h.cx), r = age * 300; v = Math.max(v, Math.max(0, 1 - Math.abs(d - r) / 30)); } }
+          }
+          c = baseColor(k); a = br * v;
+        }
+      }
+      setKeyColor(k, c, a);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---------------- effects page ----------------
+const modeIcon = (id) => {
+  const g = { 0: "#2a313d", 1: "linear-gradient(135deg,#ff3b3b,#ff3b3b)", 2: "radial-gradient(circle,#ff6b6b,#3b0f0f)", 3: "linear-gradient(135deg,#ff2bd6,#2bd0ff)",
+    4: "linear-gradient(90deg,red,yellow,lime,cyan,blue,magenta)", 5: "radial-gradient(circle,#fff 10%,#39e6b4 30%,#0e2a22 60%)", 6: "radial-gradient(circle at 30% 30%,#9cf 12%,transparent 14%),radial-gradient(circle at 70% 65%,#9cf 12%,#0d1b2a 14%)",
+    8: "radial-gradient(circle,#ffd447 25%,#2a2410 30%)", 9: "linear-gradient(135deg,#39e6b4 0 20%,#10241f 20% 80%,#39e6b4 80%)", 10: "linear-gradient(90deg,#10241f,#3aa0ff,#10241f)",
+    12: "conic-gradient(#ff3b3b 0 25%,#39e6b4 0 50%,#3aa0ff 0 75%,#ffd447 0)", 14: "conic-gradient(red,yellow,lime,cyan,blue,magenta,red)" };
+  return g[id] || "#333";
+};
+function renderModes() {
+  const box = document.getElementById("modes"); box.innerHTML = "";
+  for (const m of MODES) {
+    const b = document.createElement("button"); b.className = "mode" + (m.id === led.mode ? " active" : "");
+    b.innerHTML = `<i style="background:${modeIcon(m.id)}"></i>${t("m" + m.id)}`;
+    b.onclick = () => { led.mode = m.id; if (led.color === 6 && NO_RAINBOW.includes(m.id)) led.color = 0; syncControls(); };
+    box.appendChild(b);
+  }
+}
+// firmware has no rainbow in these modes (tested 0x06 / 0x80 on hardware — always red)
+const NO_RAINBOW = [5, 8, 10];
+function renderSwatches() {
+  const box = document.getElementById("swatches"); box.innerHTML = "";
+  PALETTE.forEach((p, i) => {
+    if (!p.c && NO_RAINBOW.includes(led.mode)) return;
+    const b = document.createElement("button"); b.className = "sw" + (p.c ? "" : " rainbow") + (led.color === i ? " active" : "");
+    if (p.c) b.style.background = `rgb(${p.c})`; b.title = t("c" + i);
+    b.onclick = () => { led.color = i; syncControls(); }; box.appendChild(b);
+  });
+  const b = document.createElement("button"); b.className = "sw custom" + (led.color === 7 ? " active" : ""); b.title = t("customColor");
+  const hex = "#" + [led.r, led.g, led.b].map(v => v.toString(16).padStart(2, "0")).join("");
+  b.style.background = led.color === 7 ? hex : "conic-gradient(from 90deg,#fff,#888,#fff)";
+  b.innerHTML = `<input type="color" value="${hex}">`;
+  b.querySelector("input").oninput = e => { const v = e.target.value; led.color = 7; led.r = parseInt(v.substr(1, 2), 16); led.g = parseInt(v.substr(3, 2), 16); led.b = parseInt(v.substr(5, 2), 16); syncControls(); };
+  box.appendChild(b);
+}
+function setRange(id, v) { const el = document.getElementById(id); el.value = v; el.style.setProperty("--p", (v - el.min) / (el.max - el.min) * 100 + "%"); document.getElementById(id + "V").textContent = v; }
+function syncControls() {
+  const m = MODES.find(m => m.id === led.mode) || MODES[1];
+  renderModes(); renderSwatches();
+  setRange("bright", led.bright); setRange("speed", led.speed);
+  document.getElementById("rowBright").classList.toggle("disabled", !m.bright);
+  document.getElementById("rowSpeed").classList.toggle("disabled", !m.speed);
+  document.getElementById("rowColor").classList.toggle("disabled", !m.color);
+  document.getElementById("rowSlot").style.display = led.mode === 12 ? "" : "none";
+  document.querySelectorAll("#slotSegL button").forEach(b => b.classList.toggle("active", +b.dataset.s === led.slot));
+  document.getElementById("dirty").classList.toggle("show", JSON.stringify(led) !== ledSaved);
+  if (led.mode === 12 && !pics[led.slot]) loadPic(led.slot);
+}
+["bright", "speed"].forEach(id => document.getElementById(id).oninput = e => { led[id] = +e.target.value; syncControls(); });
+document.querySelectorAll("#slotSegL button").forEach(b => b.onclick = () => { led.slot = +b.dataset.s; syncControls(); });
+document.getElementById("btnApply").onclick = async (e) => {
+  const btn = e.currentTarget; btn.disabled = true;
+  try { await api("POST", "/api/led", led); ledSaved = JSON.stringify(led); syncControls(); toast(t("applied")); }
+  catch (err) { toast(errText(err), true); }
+  finally { setTimeout(() => btn.disabled = false, 600); }
+};
+document.getElementById("btnReload").onclick = () => readLed(true);
+async function readLed(say) {
+  try { Object.assign(led, await api("GET", "/api/led")); ledSaved = JSON.stringify(led); syncControls(); if (say) toast(t("readBack")); }
+  catch (err) { if (say) toast(errText(err), true); }
+}
+
+// ---------------- per-key page ----------------
+let brush = [255, 42, 42], tool = "paint", recent = [[255,42,42],[57,230,180],[58,160,255],[255,212,71],[255,255,255],[180,107,255]];
+const hex = c => "#" + c.map(v => v.toString(16).padStart(2, "0")).join("").toUpperCase();
+function setBrush(c, remember) {
+  brush = c.slice(); document.getElementById("brushBig").style.background = hex(c);
+  document.getElementById("brushPick").value = hex(c).toLowerCase(); document.getElementById("brushHex").textContent = hex(c);
+  if (remember) { recent = [c.slice(), ...recent.filter(r => hex(r) !== hex(c))].slice(0, 8); renderRecent(); }
+}
+function renderRecent() {
+  const box = document.getElementById("recent"); box.innerHTML = "";
+  recent.forEach(c => { const b = document.createElement("button"); b.style.background = hex(c); b.title = hex(c); b.onclick = () => setBrush(c); box.appendChild(b); });
+}
+document.getElementById("brushPick").oninput = e => { const v = e.target.value; setBrush([1, 3, 5].map(i => parseInt(v.substr(i, 2), 16))); };
+document.getElementById("brushPick").onchange = () => setBrush(brush, true);
+document.querySelectorAll("#tools button").forEach(b => b.onclick = () => { tool = b.dataset.t; document.querySelectorAll("#tools button").forEach(x => x.classList.toggle("active", x === b)); });
+
+function curPic() { return pics[curSlot] || (pics[curSlot] = new Array(384).fill(0)); }
+function ledIndex(hid) { return MATRIX.indexOf(hid); }
+function paintKeysView() {
+  const p = curPic();
+  for (const k of KK) { const i = ledIndex(k.hid); setKeyColor(k, i >= 0 ? [p[3*i], p[3*i+1], p[3*i+2]] : [0, 0, 0], 1); }
+  document.getElementById("dirtyKeys").classList.toggle("show", picDirty);
+}
+function applyTo(k, c) {
+  const i = ledIndex(k.hid); if (i < 0) return;
+  const p = curPic(); p[3*i] = c[0]; p[3*i+1] = c[1]; p[3*i+2] = c[2];
+  setKeyColor(k, c, 1); picDirty = true; document.getElementById("dirtyKeys").classList.add("show");
+}
+let dragging = null;
+function hookPaint() {
+  const root = document.querySelector("#kbKeys .keys");
+  root.oncontextmenu = e => e.preventDefault();
+  root.onmousedown = e => {
+    const el = e.target.closest(".key"); if (!el) return;
+    const k = KK[+el.dataset.n];
+    if (e.altKey || tool === "pick") { const i = ledIndex(k.hid), p = curPic(); if (i >= 0) setBrush([p[3*i], p[3*i+1], p[3*i+2]], true); return; }
+    dragging = (e.button === 2 || tool === "erase") ? [0, 0, 0] : brush;
+    applyTo(k, dragging);
+  };
+  root.onmouseover = e => { if (!dragging) return; const el = e.target.closest(".key"); if (el) applyTo(KK[+el.dataset.n], dragging); };
+}
+addEventListener("mouseup", () => { if (dragging === brush) setBrush(brush, true); dragging = null; });
+
+async function loadPic(slot) {
+  try { const j = await api("GET", "/api/pic?slot=" + slot); const a = Array.isArray(j.rgb) ? j.rgb : (j.rgb && j.rgb.value) || []; pics[slot] = a.length === 384 ? a : new Array(384).fill(0); } catch { pics[slot] = pics[slot] || new Array(384).fill(0); }
+  if (slot === curSlot) paintKeysView();
+}
+document.querySelectorAll("#slotSeg button").forEach(b => b.onclick = async () => {
+  if (picDirty && !confirm(t("confirmSlot"))) return;
+  curSlot = +b.dataset.s; picDirty = false;
+  document.querySelectorAll("#slotSeg button").forEach(x => x.classList.toggle("active", x === b));
+  if (!pics[curSlot]) await loadPic(curSlot); paintKeysView();
+});
+const forAllKeys = f => { for (const k of KK) { const c = f(k); if (c) applyTo(k, c); } };
+document.getElementById("fillAll").onclick = () => forAllKeys(() => brush);
+document.getElementById("clearAll").onclick = () => forAllKeys(() => [0, 0, 0]);
+document.getElementById("gradRainbow").onclick = () => forAllKeys(k => hsv(k.cx / KB_W * 330));
+document.getElementById("gradTwo").onclick = () => forAllKeys(k => { const t = k.cx / KB_W; return brush.map(v => Math.round(v * (1 - t) + 255 * t)); });
+document.getElementById("presetWasd").onclick = () => { const set = [26, 4, 22, 7, 82, 80, 81, 79]; forAllKeys(k => set.includes(k.hid) ? brush : [0, 0, 0]); };
+document.getElementById("btnUpload").onclick = async (e) => {
+  const btn = e.currentTarget; btn.disabled = true; btn.textContent = t("uploading");
+  try {
+    await api("POST", "/api/pic", { slot: curSlot, rgb: curPic() });
+    picDirty = false; paintKeysView();
+    Object.assign(led, { mode: 12, slot: curSlot }); ledSaved = JSON.stringify(led); syncControls();
+    toast(t("uploaded", curSlot));
+  } catch (err) { toast(errText(err), true); }
+  finally { setTimeout(() => { btn.disabled = false; btn.textContent = t("upload"); }, 1800); }   // pictures go to flash: don't upload more often than every ~2 s
+};
+
+// ---------------- nav / status ----------------
+document.querySelectorAll(".nav").forEach(n => n.onclick = () => {
+  document.querySelectorAll(".nav").forEach(x => x.classList.toggle("active", x === n));
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.id === "page-" + n.dataset.page));
+  if (n.dataset.page === "keys") paintKeysView();
+});
+document.getElementById("darkCase").onchange = e => document.querySelectorAll(".kb").forEach(k => k.classList.toggle("dark", e.target.checked));
+let serverOk = null;   // null = not checked yet
+function updateStatusText() {
+  document.getElementById("devSt").textContent = serverOk === null ? t("searching") : !serverOk ? t("noServer") : connected ? t("connected") : t("disconnected");
+}
+async function poll(first) {
+  try {
+    const s = await api("GET", "/api/status");
+    const was = connected; connected = s.connected; serverOk = true;
+    document.getElementById("devDot").classList.toggle("on", connected);
+    document.querySelectorAll(".overlay").forEach(o => o.classList.toggle("show", !connected));
+    if (connected && (!was || first)) readLed();
+  } catch { serverOk = false; }
+  updateStatusText();
+}
+document.querySelectorAll("#lang button").forEach(b => b.onclick = () => setLang(b.dataset.l));
+addEventListener("resize", () => { clearTimeout(relayout._t); relayout._t = setTimeout(relayout, 150); });
+
+(async function init() {
+  if (!TOKEN) { document.body.innerHTML = "<p style='padding:40px'>" + t("launchHint") + "</p>"; return; }
+  applyI18n(); updateStatusText();
+  try { const m = (await api("GET", "/api/matrix")).matrix; MATRIX = Array.isArray(m) ? m : (m && m.value) || []; } catch {}
+  relayout(); setBrush(brush); renderRecent(); syncControls();
+  await poll(true); setInterval(poll, 2500);
+  loadPic(1);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
